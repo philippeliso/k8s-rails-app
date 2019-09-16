@@ -1,0 +1,239 @@
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: company-sidekiq-jobs-qa
+# spec:
+#   selector:
+#     app: company-sidekiq-jobs-qa
+#     tier: sidekiq-jobs
+#   ports:
+#   - name: http
+#     protocol: TCP
+#     port: 80
+#     targetPort: 3000
+#   type: ClusterIP
+
+# ---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: company-sidekiq-jobs-qa
+spec:
+  selector:
+    matchLabels:
+        app: company-sidekiq-jobs-qa
+        tier: sidekiq-jobs
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: company-sidekiq-jobs-qa
+        tier: sidekiq-jobs
+    spec:
+      imagePullSecrets:
+      - name: az-eus-sp-acr-auth
+      containers:
+      - name: company-sidekiq-jobs-qa
+        image: registry.azurecr.io/rails-qa:0.152
+        env:
+          # Domain
+          - name: company_DOMAIN_BASE
+            value: thedomain.com.br
+          # Sendgrid
+          - name: company_SENDGRID_API_TOKEN
+            value: sometoken
+          - name: company_SENDGRID_USERNAME
+            value: apikey
+          - name: company_SENDGRID_PASSWORD
+            value: sometoken
+          # API
+          - name: company_API_SECRET_KEY
+            value: sometoken
+          - name: company_API_VERSION
+            value: "7"
+          # AWS S3
+          - name: company_AWS_ACCESS_KEY_ID
+            value: sometoken
+          - name: company_AWS_S3_DOMAIN
+            value: s3-staging.s3.amazonaws.com
+          - name: company_AWS_SECRET_ACCESS_KEY
+            value: sometoken
+          - name: company_S3_BUCKET_NAME
+            value: thebucket
+          - name: company_S3_REGION
+            value: sa-east-1
+          # Facebook
+          - name: company_FACEBOOK_APP_SECRET
+            value: sometoken
+          # Google
+          - name: company_GOOGLE_GEOCODER_API
+            value: sometoken
+          - name: company_GOOGLE_MAPS_WEB_API
+            value: sometoken
+          # Database
+          - name: company_DATABASE_URL
+            value: psqlinstance.postgres.database.azure.com
+          - name: company_DATABASE_PASSWORD
+            value: sun123
+          - name: company_DATABASE_USER
+            value: "mutley-qa@psqlinstance"
+          # Rails
+          - name: company_SECRET_KEY_BASE
+            value: sometoken
+          - name: company_IS_STAGING
+            value: "1"
+          - name: company_LANG
+            value: en_US.UTF-8
+          - name: company_RAILS_SERVE_STATIC_FILES
+            value: enabled
+          - name: company_SITE_TITLE
+            value: STAGING:company - Mob & Sec
+          - name: company_APP_LOG_LEVEL
+            value: debug
+          # Cache
+          - name: company_MEMCACHE_URL
+            value: company-memcached-qa:11211
+          - name: company_MEMCACHE_USER
+            value: mutley
+          # Newrelic
+          - name: NEW_RELIC_AGENT_ENABLED
+            value: "false"
+          # Redis
+          - name: company_REDIS_HOST
+            value: company-redis-qa
+          - name: company_REDIS_PORT
+            value: "6379"
+          - name: company_REDIS_USER
+            value: mutley
+          # MAILCHIMP
+          - name: company_MAILCHIMP_API_KEY
+            value: sometoken
+          - name: company_MAILCHIMP_LIST_ID
+            value: somelist
+        command: ["bundle"]
+        args: ["exec", "sidekiq", "-C", "config/sidekiq.yml", "-e", "sidekiq_test", "-q", "default"]
+        resources:
+          limits:
+            cpu: "600m"
+            memory: "2Gi"
+          requests:
+            cpu: "450m"
+            memory: "1.5Gi"
+        ports:
+        - containerPort: 3001
+          name: sk-jobs-https
+          protocol: TCP
+        ports:
+        - containerPort: 3000
+          name: sk-jobs-http
+          protocol: TCP
+
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: company-sidekiq-jobs-critical-qa
+spec:
+  selector:
+    matchLabels:
+        app: company-sidekiq-jobs-critical-qa
+        tier: sidekiq-jobs-cr
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: company-sidekiq-jobs-critical-qa
+        tier: sidekiq-jobs-cr
+    spec:
+      imagePullSecrets:
+      - name: az-eus-sp-acr-auth
+      containers:
+      - name: company-sidekiq-jobs-critical-qa
+        image: azeusaksacr1.azurecr.io/company-rails-qa:0.152
+        env:
+          # Domain
+          - name: company_DOMAIN_BASE
+            value: thedomain.com.br
+          # Sendgrid
+          - name: company_SENDGRID_API_TOKEN
+            value: sometoken
+          - name: company_SENDGRID_USERNAME
+            value: apikey
+          - name: company_SENDGRID_PASSWORD
+            value: sometoken
+          # API
+          - name: company_API_SECRET_KEY
+            value: sometoken
+          - name: company_API_VERSION
+            value: "7"
+          # AWS S3
+          - name: company_AWS_ACCESS_KEY_ID
+            value: sometoken
+          - name: company_AWS_S3_DOMAIN
+            value: s3-staging.s3.amazonaws.com
+          - name: company_AWS_SECRET_ACCESS_KEY
+            value: sometoken
+          - name: company_S3_BUCKET_NAME
+            value: thebucket
+          - name: company_S3_REGION
+            value: sa-east-1
+          # Facebook
+          - name: company_FACEBOOK_APP_SECRET
+            value: sometoken
+          # Google
+          - name: company_GOOGLE_GEOCODER_API
+            value: sometoken
+          - name: company_GOOGLE_MAPS_WEB_API
+            value: sometoken
+          # Database
+          - name: company_DATABASE_URL
+            value: psqlinstance.postgres.database.azure.com
+          - name: company_DATABASE_PASSWORD
+            value: sun123
+          - name: company_DATABASE_USER
+            value: "mutley-qa@psqlinstance"
+          # Rails
+          - name: company_SECRET_KEY_BASE
+            value: sometoken
+          - name: company_IS_STAGING
+            value: "1"
+          - name: company_LANG
+            value: en_US.UTF-8
+          - name: company_RAILS_SERVE_STATIC_FILES
+            value: enabled
+          - name: company_SITE_TITLE
+            value: STAGING:company - Mob & Sec
+          - name: company_APP_LOG_LEVEL
+            value: debug
+          # Cache
+          - name: company_MEMCACHE_URL
+            value: company-memcached-qa:11211
+          - name: company_MEMCACHE_USER
+            value: mutley
+          # Newrelic
+          - name: NEW_RELIC_AGENT_ENABLED
+            value: "false"
+          # Redis
+          - name: company_REDIS_HOST
+            value: company-redis-qa
+          - name: company_REDIS_PORT
+            value: "6379"
+          - name: company_REDIS_USER
+            value: mutley
+        command: ["bundle"]
+        args: ["exec", "sidekiq", "-C", "config/sidekiq.yml", "-e", "sidekiq_test", "-q", "critical"]
+        resources:
+          limits:
+            cpu: "600m"
+            memory: "2Gi"
+          requests:
+            cpu: "450m"
+            memory: "1.5Gi"
+        ports:
+        - containerPort: 3001
+          name: sk-jobs-https
+          protocol: TCP
+        ports:
+        - containerPort: 3000
+          name: sk-jobs-http
+          protocol: TCP

@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: company-memcached-qa
+spec:
+  selector:
+    app: company-memcached-qa
+    tier: memcached
+  ports:
+  - name: memcached
+    protocol: TCP
+    port: 11211
+    targetPort: 11211
+  type: ClusterIP
+
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: company-memcached-qa
+spec:
+  selector:
+    matchLabels:
+      app: company-memcached-qa
+      tier: memcached
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: company-memcached-qa
+        tier: memcached
+    spec:
+      imagePullSecrets:
+      - name: az-eus-sp-acr-auth
+      containers:
+      - name: company-memcached-qa
+        image: registry.azurecr.io/memcached:0.1
+        resources:
+          limits:
+            cpu: "450m"
+            memory: "1.5Gi"
+          requests:
+            cpu: 300m
+            memory: "1Gi"
+        ports:
+        - containerPort: 11211
+          name: memcached
+          protocol: TCP
+        command: ["/usr/local/bin/memcached"]
+        args: ["-c", "2000", "-m", "4096"]

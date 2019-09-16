@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: company-redis-qa
+spec:
+  selector:
+    app: company-redis-qa
+    tier: redis
+  ports:
+  - name: redis
+    protocol: TCP
+    port: 6379
+    targetPort: 6379
+  type: ClusterIP
+
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: company-redis-qa
+spec:
+  selector:
+    matchLabels:
+      app: company-redis-qa
+      tier: redis
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: company-redis-qa
+        tier: redis
+    spec:
+      imagePullSecrets:
+      - name: az-eus-sp-acr-auth
+      containers:
+      - name: company-redis-qa
+        image: registry.azurecr.io/redis:0.3
+        resources:
+          limits:
+            cpu: "600m"
+            memory: "2Gi"
+          requests:
+            cpu: "450m"
+            memory: "1.5Gi"
+        ports:
+        - containerPort: 6379
+          name: redis
+          protocol: TCP

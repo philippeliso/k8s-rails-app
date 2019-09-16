@@ -1,0 +1,164 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: company-app-qa
+spec:
+  selector:
+    app: company-app-qa
+    tier: frontend
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 3000
+  - name: https
+    protocol: TCP
+    port: 443
+    targetPort: 3001
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: company-app-qa
+spec:
+  selector:
+    matchLabels:
+        app: company-app-qa
+        tier: frontend
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: company-app-qa
+        tier: frontend
+    spec:
+      imagePullSecrets:
+      - name: az-eus-sp-acr-auth
+      containers:
+      - name: company-rails-app-qa
+        image: registry.azurecr.io/theimage:0.152
+        env:
+          # Puma
+          - name: company_PORT
+            value: "3000"
+          - name: company_SSL_PORT
+            value: "3001"
+          - name: company_RACK_ENV
+            value: test
+          - name: company_WEB_CONCURRENCY
+            value: "2"
+          - name: company_MAX_THREADS
+            value: "5"
+          # Domain
+          - name: company_DOMAIN_BASE
+            value: thedomain.com.br
+          # Sendgrid
+          - name: company_SENDGRID_API_TOKEN
+            value: sometoken
+          - name: company_SENDGRID_USERNAME
+            value: apikey
+          - name: company_SENDGRID_PASSWORD
+            value: sometoken
+          # API
+          - name: company_API_SECRET_KEY
+            value: sometoken
+          - name: company_API_VERSION
+            value: "7"
+          # AWS S3
+          - name: company_AWS_ACCESS_KEY_ID
+            value: sometoken
+          - name: company_AWS_S3_DOMAIN
+            value: s3-staging.s3.amazonaws.com
+          - name: company_AWS_SECRET_ACCESS_KEY
+            value: sometoken
+          - name: company_S3_BUCKET_NAME
+            value: thebucket
+          - name: company_S3_REGION
+            value: sa-east-1
+          # Facebook
+          - name: company_FACEBOOK_APP_SECRET
+            value: sometoken
+          # Google
+          - name: company_GOOGLE_GEOCODER_API
+            value: sometoken
+          - name: company_GOOGLE_MAPS_WEB_API
+            value: sometoken
+          # Database
+          - name: company_DATABASE_URL
+            value: psqlinstance.postgres.database.azure.com
+          - name: company_DATABASE_PASSWORD
+            value: sun123
+          - name: company_DATABASE_USER
+            value: "mutley-qa@psqlinstance"
+          # Rails
+          - name: company_SECRET_KEY_BASE
+            value: sometoken
+          - name: company_IS_STAGING
+            value: "1"
+          - name: company_LANG
+            value: en_US.UTF-8
+          - name: company_RAILS_SERVE_STATIC_FILES
+            value: enabled
+          - name: company_SITE_TITLE
+            value: STAGING:company - Mob & Sec
+          - name: company_APP_LOG_LEVEL
+            value: debug
+          # Cache
+          - name: company_MEMCACHE_URL
+            value: company-memcached-qa:11211
+          - name: company_MEMCACHE_USER
+            value: mutley
+          # Newrelic
+          - name: NEW_RELIC_AGENT_ENABLED
+            value: "false"
+          # Redis
+          - name: company_REDIS_HOST
+            value: company-redis-qa
+          - name: company_REDIS_PORT
+            value: "6379"
+          - name: company_REDIS_USER
+            value: mutley
+          # MAILCHIMP
+          - name: company_MAILCHIMP_API_KEY
+            value: sometoken
+          - name: company_MAILCHIMP_LIST_ID
+            value: somelist
+        command: ["bundle"]
+        args: ["exec", "puma"]
+        resources:
+          limits:
+            #cpu: "1000m"
+            cpu: "400m"
+            #memory: "768Mi"
+            memory: "512Mi"
+          requests:
+            #cpu: "700m"
+            cpu: "300m"
+            #memory: "512Mi"
+            memory: "486Mi"
+        ports:
+        - containerPort: 3000
+          name: rails-http
+          protocol: TCP
+        ports:
+        - containerPort: 3001
+          name: rails-https
+          protocol: TCP
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: company-app-qa
+spec:
+  maxReplicas: 6
+  minReplicas: 2
+  scaleTargetRef:
+    apiVersion: extensions/v1beta1
+    kind: Deployment
+    name: company-app-qa
+  targetCPUUtilizationPercentage: 70
+status:
+  currentReplicas: 2
+  desiredReplicas: 0
